@@ -28,25 +28,32 @@ client.login(process.env.DISCORD_API_KEY);
 // Where the magic happens
 try {
   client.on("messageCreate", async (message) => {
+    console.log(message);
     if (message.author.bot) return;
-    if (message.author.system) return;
+    if (message.system) return;
+    if (
+      message.channelId === "1114830303740047410" &&
+      message.content !== "<@1113624071721193524> start" &&
+      message.content !== "<@1113624071721193524> help" &&
+      message.content !== "<@1113624071721193524>"
+    ) {
+      message.reply(
+        'type "<@1113624071721193524> start" to create a new channel'
+      );
+      return;
+    }
+
+    await message.channel.sendTyping();
 
     if (message.content.split(" ")[0] === "<@1113624071721193524>") {
       let text = message.content.replace(/<@1113624071721193524>\s*/, "");
 
-      await message.channel.sendTyping();
-
       const command = text.split(" ")[0].toLowerCase();
 
-      if (command === "help") {
+      if (command === "help" || command === "") {
         message.reply(
-          'type "<@1113624071721193524> start" in <#1114830303740047410> to create a new channel'
+          'type "<@1113624071721193524> start" in <#1114830303740047410> to create a new channel\nthen type your message to the bot in the new channel to get a response'
         );
-        return;
-      }
-
-      if (command === "") {
-        message.reply("type something!");
         return;
       }
 
@@ -54,12 +61,8 @@ try {
        * this is the part where it creates the channel under the persons category
        */
       if (command === "start") {
-        const channelName =
-          message.author.username +
-          "#" +
-          message.author.discriminator +
-          " " +
-          message.author.id;
+        const channelName = message.author.id;
+
         try {
           let category = message.guild.channels.cache.find(
             (channel) => channel.type === 4 && channel.name === channelName
@@ -95,61 +98,68 @@ try {
             "Created new channel: " +
               message.guild.channels.cache.get(channel.id).toString()
           );
-
-          channel.sendTyping();
-          channel.send(
-            "Greetings! I am ChatGPT, an advanced AI language model designed to engage in conversations and provide helpful information. Feel free to ask me anything you'd like, and I'll do my best to assist you!"
-          );
         } catch (error) {
           console.error("Error creating channel: ", error);
           message.channel.send("There was an error creating the channel");
         }
         return;
       }
+    }
 
-      let conversationLog = [
-        {
-          role: "system",
-          content:
-            "every response must be under 2000 words or less and make sure to use as little tokens as possible",
-        },
-      ];
+    let conversationLog = [
+      {
+        role: "system",
+        content:
+          "every response must be under 2000 words or less and make sure to use as little tokens as possible",
+      },
+    ];
 
-      // parameter for fetch() { limit: 20 }
-      let prevMessages = await message.channel.messages.fetch();
-      prevMessages.reverse();
+    // parameter for fetch() { limit: 20 }
+    let prevMessages = await message.channel.messages.fetch();
+    prevMessages.reverse();
 
-      prevMessages.forEach((msg) => {
-        if (msg.author.id === "1113624071721193524") {
-          conversationLog.push({
-            role: "assistant",
-            content: msg.content,
-          });
+    prevMessages.forEach((msg) => {
+      if (msg.author.id === "1113624071721193524") {
+        if (
+          msg.content ===
+            "type something, after the mention, to get a response" ||
+          msg.content ===
+            'type "<@1113624071721193524> start" in <#1114830303740047410> to create a new channel\nthen type "<@1113624071721193524> [message]" in the new channel to get a response' ||
+          msg.content.slice(0, 20) === "Created new channel:"
+        )
           return;
-        }
-        //if (msg.author.id !== client.user.id) return;
-        if (message.author.bot) return;
-        //if (msg.author.id !== message.author.id) return;
         conversationLog.push({
-          role: "user",
-          content: msg.content.replace(/<@1113624071721193524>\s*/, ""),
+          role: "assistant",
+          content: msg.content,
         });
-      });
-
-      // model: "gpt-3.5-turbo"
-      // model: "gpt-4"
-      const completion = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo",
-        messages: conversationLog,
-      });
-
-      let response = completion.data.choices[0].message.content;
-
-      if (response) {
-        message.reply(response);
-      } else {
-        message.channel.send("There was an error generating the message.");
+        return;
       }
+      //if (msg.author.id !== client.user.id) return;
+      if (message.author.bot) return;
+      //if (msg.author.id !== message.author.id) return;
+
+      const userMessage = msg.content.replace(/<@1113624071721193524>\s*/, "");
+      if (!userMessage || userMessage === "help" || userMessage === "start")
+        return;
+      conversationLog.push({
+        role: "user",
+        content: userMessage,
+      });
+    });
+
+    // model: "gpt-3.5-turbo"
+    // model: "gpt-4"
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: conversationLog,
+    });
+
+    let response = completion.data.choices[0].message.content;
+    console.log(conversationLog);
+    if (response) {
+      message.reply(response);
+    } else {
+      message.channel.send("There was an error generating the message.");
     }
   });
 } catch (error) {
