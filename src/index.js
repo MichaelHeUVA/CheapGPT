@@ -1,5 +1,6 @@
 import { Configuration, OpenAIApi } from "openai";
 import { Client, IntentsBitField } from "discord.js";
+import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -28,7 +29,6 @@ client.login(process.env.DISCORD_API_KEY);
 // Where the magic happens
 try {
   client.on("messageCreate", async (message) => {
-    console.log(message);
     if (message.author.bot) return;
     if (message.system) return;
     if (
@@ -110,7 +110,7 @@ try {
       {
         role: "system",
         content:
-          "every response must be under 2000 words or less and make sure to use as little tokens as possible",
+          "try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
       },
     ];
 
@@ -147,19 +147,32 @@ try {
       });
     });
 
-    // model: "gpt-3.5-turbo"
-    // model: "gpt-4"
+    // model: "gpt-3.5-turbo-0613"
+    // model: "gpt-4-0613"
+    // model: "gpt-3.5-turbo-16k-0613"
     const completion = await openai.createChatCompletion({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo-0613",
       messages: conversationLog,
     });
 
     let response = completion.data.choices[0].message.content;
-    console.log(conversationLog);
-    if (response) {
-      message.reply(response);
-    } else {
-      message.channel.send("There was an error generating the message.");
+
+    try {
+      if (response) {
+        if (response.length > 2000) {
+          fs.writeFileSync("response.txt", response);
+          message.reply({ files: ["./response.txt"] }).then(() => {
+            fs.unlinkSync("./response.txt");
+          });
+        } else {
+          message.reply(response);
+        }
+      } else {
+        message.reply("There was an error generating the message.");
+      }
+    } catch (error) {
+      console.log(error);
+      message.reply("There was an error generating the message.");
     }
   });
 } catch (error) {
