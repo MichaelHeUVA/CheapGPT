@@ -29,6 +29,7 @@ client.login(process.env.DISCORD_API_KEY);
 try {
   client.on("messageCreate", async (message) => {
     console.log(message);
+
     if (message.author.bot) return;
     if (message.system) return;
     /**
@@ -68,11 +69,12 @@ try {
 
         /**
          * Delete the category and all the channels in it
+         * Only michael.he can do this
          */
-        if (command === "cancel") {
-          /**
-           * @todo make sure the user is an admin sometime
-           * */
+        if (
+          command === "cancel" &&
+          message.author.id === "251540674439151616"
+        ) {
           const user = text.replace(/cancel\s*/, "").split(" ")[0];
           const channelName = user.replace(/<@/, "").replace(/>/, "");
           if (user) {
@@ -94,6 +96,9 @@ try {
             message.reply("Specify who you are trying to cancel");
           }
           return;
+        } else if (command === "cancel") {
+          message.reply("You do not have permission to do that");
+          return;
         }
 
         /**
@@ -109,7 +114,7 @@ try {
         }
 
         /**
-         * this is the part where it creates the channel under the persons category
+         * Creates the channel under the persons category
          */
         if (command === "start") {
           const channelName = message.author.id;
@@ -139,8 +144,24 @@ try {
               (channel) => channel.parentId === category.id
             ).size;
 
+            const now = new Date();
+            const uniqueID = [
+              now.getFullYear(),
+              now.getMonth() + 1,
+              now.getDate(),
+              now.getHours(),
+              now.getMinutes(),
+              now.getSeconds(),
+            ].join("-");
+
+            // const channel = await message.guild.channels.create({
+            //   name: [message.author.username, uniqueID].join("-"),
+            //   type: 0,
+            //   parent: category.id,
+            // });
+
             const channel = await message.guild.channels.create({
-              name: message.author.username + " " + (channelCount + 1),
+              name: uniqueID,
               type: 0,
               parent: category.id,
             });
@@ -158,7 +179,7 @@ try {
       }
 
       /**
-       * this is the part where it sends the message to the bot and gets a response
+       * Sends the message to the bot and gets a response
        */
 
       let conversationLog = [
@@ -175,12 +196,7 @@ try {
 
       prevMessages.forEach((msg) => {
         if (msg.author.id === "1113624071721193524") {
-          if (
-            msg.content ===
-              'type "<@1113624071721193524> start" in <#1114830303740047410> or your own channel to create a new channel\nthen type your message to the bot in the new channel to get a response\nto delete your own coversation/channel you can type "<@1113624071721193524> close" to delete the channel' ||
-            msg.content.slice(0, 20) === "Created new channel:"
-          )
-            return;
+          if (msg.mentions.repliedUser) return;
           conversationLog.push({
             role: "assistant",
             content: msg.content,
@@ -210,17 +226,17 @@ try {
         messages: conversationLog,
       });
 
-      let response = completion.data.choices[0].message.content;
+      const response = completion.data.choices[0].message.content;
 
       try {
         if (response) {
           if (response.length > 2000) {
             fs.writeFileSync("response.txt", response);
-            message.reply({ files: ["./response.txt"] }).then(() => {
+            message.channel.send({ files: ["./response.txt"] }).then(() => {
               fs.unlinkSync("./response.txt");
             });
           } else {
-            message.reply(response);
+            message.channel.send(response);
           }
         } else {
           message.reply(
