@@ -29,7 +29,7 @@ client.login(process.env.DISCORD_API_KEY);
 
 client.on("messageCreate", async (message) => {
   try {
-    //console.log(message);
+    console.log(message);
 
     if (message.author.bot) return;
     if (message.system) return;
@@ -225,7 +225,6 @@ client.on("messageCreate", async (message) => {
       const completion = await openai.createChatCompletion({
         model: "gpt-3.5-turbo-0613",
         messages: conversationLog,
-        stream: true,
       });
 
       const response = completion.data.choices[0].message.content;
