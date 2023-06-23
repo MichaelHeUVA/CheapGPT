@@ -2,6 +2,7 @@ import { Configuration, OpenAIApi } from "openai";
 import { Client, IntentsBitField } from "discord.js";
 import fs from "fs";
 import dotenv from "dotenv";
+import stringify from "json-stringify-safe";
 dotenv.config();
 
 const configuration = new Configuration({
@@ -21,14 +22,14 @@ const client = new Client({
 });
 
 client.on("ready", (c) => {
-  console.log("CheapGPT is on and ready");
+  console.log("CheapGPT bot is ready");
 });
 
 client.login(process.env.DISCORD_API_KEY);
 
-try {
-  client.on("messageCreate", async (message) => {
-    console.log(message);
+client.on("messageCreate", async (message) => {
+  try {
+    //console.log(message);
 
     if (message.author.bot) return;
     if (message.system) return;
@@ -73,7 +74,7 @@ try {
          */
         if (
           command === "cancel" &&
-          message.author.id === "251540674439151616"
+          message.member.roles.cache.some((role) => role.name === "Admin")
         ) {
           const user = text.replace(/cancel\s*/, "").split(" ")[0];
           const channelName = user.replace(/<@/, "").replace(/>/, "");
@@ -87,8 +88,8 @@ try {
                   await channel.delete();
                 }
               });
-              category.delete();
               message.reply("Ending conversation with " + user);
+              category.delete();
             } else {
               message.reply("User has no channels or is not found");
             }
@@ -224,6 +225,7 @@ try {
       const completion = await openai.createChatCompletion({
         model: "gpt-3.5-turbo-0613",
         messages: conversationLog,
+        stream: true,
       });
 
       const response = completion.data.choices[0].message.content;
@@ -247,12 +249,53 @@ try {
         console.log(error);
         message.reply("There was an error generating the message.");
       }
+
+      /**
+       * Streaming it is too hard might come back to it later
+       */
+      // let resultText = "";
+      // const chunk = completion.data;
+      // const lines = chunk.split("\n\n");
+      // const parsedLines = lines
+      //   .map((line) => line.replace(/^data: /, "").trim())
+      //   .filter((line) => line !== "" && line !== "[DONE]");
+      // parsedLines.forEach((line) => {
+      //   let contentPattern = /"content":"(.*?)"/;
+      //   let match = line.match(contentPattern);
+      //   let content;
+      //   if (match) {
+      //     content = match[1];
+      //   }
+      //   resultText += content;
+      //   console.log(resultText.toString());
+      // });
+      // fs.writeFileSync("response.txt", resultText);
+      // resultText = resultText.toString();
+      // try {
+      //   if (resultText) {
+      //     if (resultText.length > 2000) {
+      //       fs.writeFileSync("response.txt", resultText);
+      //       message.channel.send({ files: ["./response.txt"] }).then(() => {
+      //         fs.unlinkSync("./response.txt");
+      //       });
+      //     } else {
+      //       message.channel.send(resultText);
+      //     }
+      //   } else {
+      //     message.reply(
+      //       "There was an error generating the message. Please try again."
+      //     );
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      //   message.reply("There was an error generating the message.");
+      // }
     } else {
       message.reply(
         "You do not have permission to use this bot contact an admin in <#1118386041057968228>"
       );
     }
-  });
-} catch (error) {
-  console.log(error);
-}
+  } catch (error) {
+    console.log(error);
+  }
+});
