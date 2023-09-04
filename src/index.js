@@ -29,7 +29,7 @@ client.login(process.env.DISCORD_API_KEY);
 
 client.on("messageCreate", async (message) => {
   try {
-    console.log(message);
+    //console.log(message);
 
     if (message.author.bot) return;
     if (message.system) return;
@@ -186,8 +186,7 @@ client.on("messageCreate", async (message) => {
       let conversationLog = [
         {
           role: "system",
-          content:
-            "try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
+          content: "", //"try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
         },
       ];
 
@@ -223,7 +222,7 @@ client.on("messageCreate", async (message) => {
       // model: "gpt-4-0613"
       // model: "gpt-3.5-turbo-16k-0613"
       const completion = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo-0613",
+        model: "gpt-4-0613",
         messages: conversationLog,
       });
 
