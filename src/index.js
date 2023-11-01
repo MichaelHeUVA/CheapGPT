@@ -2,7 +2,7 @@ import { Configuration, OpenAIApi } from "openai";
 import { Client, IntentsBitField } from "discord.js";
 import fs from "fs";
 import dotenv from "dotenv";
-import stringify from "json-stringify-safe";
+import { getUser, addUser, addAmount, reset } from "./database.js";
 dotenv.config();
 
 const configuration = new Configuration({
@@ -36,7 +36,7 @@ client.on("messageCreate", async (message) => {
     /**
      * Check if the user has the Paid role otherwise it tells them to get the role
      */
-    if (message.member.roles.cache.some((role) => role.name === "Paid")) {
+    if (message.member?.roles.cache.some((role) => role.name === "Paid")) {
       // if its in the get started channel then return
       if (
         message.channelId === "1114830303740047410" &&
@@ -74,17 +74,17 @@ client.on("messageCreate", async (message) => {
          */
         if (
           command === "cancel" &&
-          message.member.roles.cache.some((role) => role.name === "Admin")
+          message.member?.roles.cache.some((role) => role.name === "Admin")
         ) {
           const user = text.replace(/cancel\s*/, "").split(" ")[0];
           const channelName = user.replace(/<@/, "").replace(/>/, "");
           if (user) {
-            let category = message.guild.channels.cache.find(
+            let category = message.guild?.channels.cache.find(
               (channel) => channel.type === 4 && channel.name === channelName
             );
             if (category) {
-              message.guild.channels.cache.forEach(async (channel) => {
-                if (channel.parentId === category.id) {
+              message.guild?.channels.cache.forEach(async (channel) => {
+                if (channel.parentId === category?.id) {
                   await channel.delete();
                 }
               });
@@ -121,11 +121,11 @@ client.on("messageCreate", async (message) => {
           const channelName = message.author.id;
 
           try {
-            let category = message.guild.channels.cache.find(
+            let category = message.guild?.channels.cache.find(
               (channel) => channel.type === 4 && channel.name === channelName
             );
             if (!category) {
-              category = await message.guild.channels.create({
+              category = await message.guild?.channels.create({
                 name: channelName,
                 type: 4,
                 permissionOverwrites: [
@@ -141,8 +141,8 @@ client.on("messageCreate", async (message) => {
               });
             }
 
-            const channelCount = message.guild.channels.cache.filter(
-              (channel) => channel.parentId === category.id
+            const channelCount = message.guild?.channels.cache.filter(
+              (channel) => channel.parentId === category?.id
             ).size;
 
             const now = new Date();
@@ -161,16 +161,20 @@ client.on("messageCreate", async (message) => {
             //   parent: category.id,
             // });
 
-            const channel = await message.guild.channels.create({
+            const channel = await message.guild?.channels.create({
               name: uniqueID,
               type: 0,
-              parent: category.id,
+              parent: category?.id,
             });
-
-            message.reply(
-              "Created new channel: " +
-                message.guild.channels.cache.get(channel.id).toString()
-            );
+            if (channel)
+              message.reply(
+                "Created new channel: " +
+                  message.guild?.channels.cache.get(channel.id)?.toString()
+              );
+            else
+              message.reply(
+                "There was an error creating the channel. Please try again."
+              );
           } catch (error) {
             console.error("Error creating channel: ", error);
             message.channel.send("There was an error creating the channel");
@@ -184,14 +188,14 @@ client.on("messageCreate", async (message) => {
        */
 
       let conversationLog = [
-        {
-          role: "system",
-          content: "", //"try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
-        },
+        // {
+        //   role: "system",
+        //   content: "", //"try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
+        // },
       ];
 
       // parameter for fetch() { limit: # of messages to fetch }
-      let prevMessages = await message.channel.messages.fetch({ limit: 10 });
+      let prevMessages = await message.channel.messages.fetch({ limit: 3 });
       prevMessages.reverse();
 
       prevMessages.forEach((msg) => {
@@ -224,9 +228,24 @@ client.on("messageCreate", async (message) => {
       const completion = await openai.createChatCompletion({
         model: "gpt-4-0613",
         messages: conversationLog,
+        temperature: 1,
+        // max_tokens: 256,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
       });
 
-      const response = completion.data.choices[0].message.content;
+      const response = completion.data.choices[0].message?.content;
+
+      if ((await getUser(message.author.id)) === undefined) {
+        await addUser(message.author.id, message.author.username);
+      }
+
+      const prompt_tokens = completion.data.usage?.prompt_tokens;
+      const completion_tokens = completion.data.usage?.completion_tokens;
+      // const total_tokens = completion.data.usage?.total_tokens;
+      const cost = calculateTokenCost(prompt_tokens, completion_tokens);
+      await addAmount(message.author.id, cost);
 
       try {
         if (response) {
@@ -297,3 +316,7 @@ client.on("messageCreate", async (message) => {
     console.log(error);
   }
 });
+
+function calculateTokenCost(prompt_tokens, completion_tokens) {
+  return (prompt_tokens * 0.03) / 1000 + (completion_tokens * 0.06) / 1000;
+}
