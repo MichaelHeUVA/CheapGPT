@@ -155,12 +155,6 @@ client.on("messageCreate", async (message) => {
               now.getSeconds(),
             ].join("-");
 
-            // const channel = await message.guild.channels.create({
-            //   name: [message.author.username, uniqueID].join("-"),
-            //   type: 0,
-            //   parent: category.id,
-            // });
-
             const channel = await message.guild?.channels.create({
               name: uniqueID,
               type: 0,
@@ -188,10 +182,10 @@ client.on("messageCreate", async (message) => {
        */
 
       let conversationLog = [
-        // {
-        //   role: "system",
-        //   content: "", //"try to have ever response be less than 2000 characters and make sure to use as little tokens as possible",
-        // },
+        {
+          role: "system",
+          content: "be concise",
+        },
       ];
 
       // parameter for fetch() { limit: # of messages to fetch }
@@ -226,7 +220,7 @@ client.on("messageCreate", async (message) => {
       // model: "gpt-4-0613"
       // model: "gpt-3.5-turbo-16k-0613"
       const completion = await openai.createChatCompletion({
-        model: "gpt-4-0613",
+        model: "gpt-4-1106-preview",
         messages: conversationLog,
         temperature: 1,
         // max_tokens: 256,
@@ -266,47 +260,6 @@ client.on("messageCreate", async (message) => {
         console.log(error);
         message.reply("There was an error generating the message.");
       }
-
-      /**
-       * Streaming it is too hard might come back to it later
-       */
-      // let resultText = "";
-      // const chunk = completion.data;
-      // const lines = chunk.split("\n\n");
-      // const parsedLines = lines
-      //   .map((line) => line.replace(/^data: /, "").trim())
-      //   .filter((line) => line !== "" && line !== "[DONE]");
-      // parsedLines.forEach((line) => {
-      //   let contentPattern = /"content":"(.*?)"/;
-      //   let match = line.match(contentPattern);
-      //   let content;
-      //   if (match) {
-      //     content = match[1];
-      //   }
-      //   resultText += content;
-      //   console.log(resultText.toString());
-      // });
-      // fs.writeFileSync("response.txt", resultText);
-      // resultText = resultText.toString();
-      // try {
-      //   if (resultText) {
-      //     if (resultText.length > 2000) {
-      //       fs.writeFileSync("response.txt", resultText);
-      //       message.channel.send({ files: ["./response.txt"] }).then(() => {
-      //         fs.unlinkSync("./response.txt");
-      //       });
-      //     } else {
-      //       message.channel.send(resultText);
-      //     }
-      //   } else {
-      //     message.reply(
-      //       "There was an error generating the message. Please try again."
-      //     );
-      //   }
-      // } catch (error) {
-      //   console.log(error);
-      //   message.reply("There was an error generating the message.");
-      // }
     } else {
       message.reply(
         "You do not have permission to use this bot contact an admin in <#1118386041057968228>"
@@ -318,5 +271,5 @@ client.on("messageCreate", async (message) => {
 });
 
 function calculateTokenCost(prompt_tokens, completion_tokens) {
-  return (prompt_tokens * 0.03) / 1000 + (completion_tokens * 0.06) / 1000;
+  return ((prompt_tokens * 0.01) / 1000) + ((completion_tokens * 0.03) / 1000);
 }

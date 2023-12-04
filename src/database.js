@@ -48,9 +48,11 @@ export async function addAmount(discordUID, amount) {
 export async function reset(discordUID) {
   await pool.query(
     `
-        UPDATE users
+        SET SQL_SAFE_UPDATES = 0;
+        UPDATE cheaptgpt.users
         SET amount = 0
-        WHERE discord_uid = ?
+        WHERE discord_uid = ?;
+        SET SQL_SAFE_UPDATES = 1;
         `,
     [discordUID]
   );
