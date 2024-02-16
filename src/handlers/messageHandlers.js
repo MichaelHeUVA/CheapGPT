@@ -122,7 +122,12 @@ export async function handleMessage(message) {
                                     },
                                     {
                                         id: message.author.id, // For the user
-                                        allow: ["1024", "2048", "65536"], // Allow only the user to view this category 2048 is the bit value of "SEND_MESSAGES" 65536 is the bit value of "READ_MESSAGE_HISTORY"
+                                        allow: [
+                                            "1024",
+                                            "2048",
+                                            "32768",
+                                            "65536",
+                                        ], // Allow only the user to view this category 2048 is the bit value of "SEND_MESSAGES" 32768 is the bit value of "ATTACH_FILES" 65536 is the bit value of "READ_MESSAGE_HISTORY"
                                     },
                                 ],
                             });
@@ -154,6 +159,7 @@ export async function handleMessage(message) {
                             message.reply(
                                 "There was an error creating the channel. Please try again."
                             );
+                        return;
                     } catch (error) {
                         console.error("Error creating channel: ", error);
                         message.channel.send(
