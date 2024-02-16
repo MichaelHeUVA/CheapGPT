@@ -1,16 +1,11 @@
-import { Configuration, OpenAIApi } from "openai";
+import OpenAI from "openai";
 import { Client, IntentsBitField } from "discord.js";
 import fs from "fs";
 import dotenv from "dotenv";
-import { getUser, addUser, addAmount, reset } from "./database.js";
+import { getUser, addUser, addAmount, reset, createTables } from "./database.js";
 dotenv.config();
 
-const configuration = new Configuration({
-  organization: process.env.OPENAI_ORG,
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI();
 
 const client = new Client({
   intents: [
@@ -219,24 +214,21 @@ client.on("messageCreate", async (message) => {
       // model: "gpt-3.5-turbo-0613"
       // model: "gpt-4-0613"
       // model: "gpt-3.5-turbo-16k-0613"
-      const completion = await openai.createChatCompletion({
-        model: "gpt-4-1106-preview",
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
         messages: conversationLog,
-        temperature: 1,
         // max_tokens: 256,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
       });
 
-      const response = completion.data.choices[0].message?.content;
+      const response = completion.choices[0].message?.content;
 
+      createTables();
       if ((await getUser(message.author.id)) === undefined) {
         await addUser(message.author.id, message.author.username);
       }
 
-      const prompt_tokens = completion.data.usage?.prompt_tokens;
-      const completion_tokens = completion.data.usage?.completion_tokens;
+      const prompt_tokens = completion.usage?.prompt_tokens;
+      const completion_tokens = completion.usage?.completion_tokens;
       // const total_tokens = completion.data.usage?.total_tokens;
       const cost = calculateTokenCost(prompt_tokens, completion_tokens);
       await addAmount(message.author.id, cost);
