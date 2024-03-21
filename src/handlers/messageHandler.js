@@ -170,7 +170,74 @@ export async function handleMessage(message) {
                 }
             }
 
-            let response = await getOpenAIReponse(message);
+            let number_of_images = 0;
+
+            let conversationLog = [
+                // {
+                //     role: "system",
+                //     content: "",
+                // },
+            ];
+
+            // parameter for fetch() { limit: # of messages to fetch }
+            let prevMessages = await message.channel.messages.fetch({
+                limit: 5,
+            });
+            prevMessages.reverse();
+
+            prevMessages.forEach((msg) => {
+                if (msg.author.id === "1113624071721193524") {
+                    if (msg.mentions.repliedUser) return;
+                    conversationLog.push({
+                        role: "assistant",
+                        content: msg.content,
+                    });
+                    return;
+                }
+                if (message.author.bot) return;
+
+                let userMessage = msg.content;
+                const regex = /<@1113624071721193524>\s*/;
+
+                const found = userMessage.search(regex) >= 0;
+                if (found)
+                    userMessage = userMessage.replace(
+                        /<@1113624071721193524>\s*/,
+                        ""
+                    );
+                else return;
+
+                if (msg.attachments.size > 0) {
+                    msg.attachments.forEach((attachment) => {
+                        number_of_images++;
+                        conversationLog.push({
+                            role: "user",
+                            content: [
+                                { type: "text", text: userMessage },
+                                {
+                                    type: "image_url",
+                                    image_url: {
+                                        url: attachment.url,
+                                        detail: "low",
+                                    },
+                                },
+                            ],
+                        });
+                    });
+                    return;
+                }
+
+                conversationLog.push({
+                    role: "user",
+                    content: userMessage,
+                });
+            });
+
+            let response = await getOpenAIReponse(
+                message,
+                conversationLog,
+                number_of_images
+            );
             handleResponse(message, response);
         } else {
             message.reply(

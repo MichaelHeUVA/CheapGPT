@@ -7,75 +7,32 @@ import {
     addAmount,
 } from "../database/database.js";
 
-export async function getOpenAIReponse(message) {
-    const openai = new OpenAI();
-
-    let number_of_images = 0;
-
-    let conversationLog = [
-        // {
-        //     role: "system",
-        //     content: "",
-        // },
-    ];
-
-    // parameter for fetch() { limit: # of messages to fetch }
-    let prevMessages = await message.channel.messages.fetch({
-        limit: 5,
-    });
-    prevMessages.reverse();
-
-    prevMessages.forEach((msg) => {
-        if (msg.author.id === "1113624071721193524") {
-            if (msg.mentions.repliedUser) return;
-            conversationLog.push({
-                role: "assistant",
-                content: msg.content,
-            });
-            return;
-        }
-        if (message.author.bot) return;
-
-        const userMessage = msg.content.replace(
-            /<@1113624071721193524>\s*/,
-            ""
-        );
-
-        if (!userMessage || userMessage === "help" || userMessage === "start")
-            return;
-        if (msg.attachments.size > 0) {
-            msg.attachments.forEach((attachment) => {
-                number_of_images++;
-                conversationLog.push({
-                    role: "user",
-                    content: [
-                        { type: "text", text: userMessage },
-                        {
-                            type: "image_url",
-                            image_url: {
-                                url: attachment.url,
-                                detail: "low",
-                            },
-                        },
-                    ],
-                });
-            });
-            return;
-        }
-
-        conversationLog.push({
-            role: "user",
-            content: userMessage,
-        });
-    });
-
+export async function getOpenAIReponse(
+    message,
+    conversationLog,
+    number_of_images
+) {
     // model: "gpt-4-turbo-preview"
     // model: "gpt-4-vision-preview"
-    const completion = await openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
-        messages: conversationLog,
-        max_tokens: 1000,
-    });
+    let completion;
+    if (number_of_images > 0) {
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+        completion = await openai.chat.completions.create({
+            model: "gpt-4-vision-preview",
+            messages: conversationLog,
+        });
+    } else {
+        const openai = new OpenAI({
+            baseURL: "https://router.neutrinoapp.com/api/engines",
+            apiKey: process.env.NEUTRINO_API_KEY,
+        });
+        completion = await openai.chat.completions.create({
+            model: "chat",
+            messages: conversationLog,
+        });
+    }
 
     createTables();
     if ((await getUser(message.author.id)) === undefined) {
@@ -92,5 +49,8 @@ export async function getOpenAIReponse(message) {
 
     await addAmount(message.author.id, cost);
 
+    console.log(
+        `Model used: ${completion.model}\nUser: ${message.author.id}\nCost: ${cost}\nResponse: ${completion.choices[0].message?.content}`
+    );
     return completion.choices[0].message?.content;
 }
