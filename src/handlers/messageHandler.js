@@ -1,5 +1,5 @@
-import fs from "fs";
 import { getOpenAIReponse } from "../openai/openaiService.js";
+import { handleResponse } from "./responseHandler.js";
 
 export async function handleMessage(message) {
     try {
@@ -171,28 +171,7 @@ export async function handleMessage(message) {
             }
 
             let response = await getOpenAIReponse(message);
-
-            try {
-                if (response) {
-                    if (response.length > 2000) {
-                        fs.writeFileSync("response.txt", response);
-                        message.channel
-                            .send({ files: ["./response.txt"] })
-                            .then(() => {
-                                fs.unlinkSync("./response.txt");
-                            });
-                    } else {
-                        message.channel.send(response);
-                    }
-                } else {
-                    message.reply(
-                        "There was an error generating the message. Please try again."
-                    );
-                }
-            } catch (error) {
-                console.log(error);
-                message.reply("There was an error generating the message.");
-            }
+            handleResponse(message, response);
         } else {
             message.reply(
                 "You do not have permission to use this bot contact an admin in <#1118386041057968228>"

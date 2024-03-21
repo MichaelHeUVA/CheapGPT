@@ -74,7 +74,7 @@ export async function getOpenAIReponse(message) {
     const completion = await openai.chat.completions.create({
         model: "gpt-4-vision-preview",
         messages: conversationLog,
-        max_tokens: 750,
+        max_tokens: 1000,
     });
 
     createTables();
