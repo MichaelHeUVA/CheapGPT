@@ -50,7 +50,7 @@ export async function getOpenAIReponse(
     await addAmount(message.author.id, cost);
 
     console.log(
-        `Model used: ${completion.model}\nUser: ${message.author.id}\nCost: ${cost}\nResponse: ${completion.choices[0].message?.content}`
+        `Model used: ${completion.model}\nUser: ${message.author.id}\nCost: ${cost}\nResponse: ${completion.choices[0].message?.content}\n`
     );
     return completion.choices[0].message?.content;
 }

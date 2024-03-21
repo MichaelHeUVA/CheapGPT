@@ -181,7 +181,7 @@ export async function handleMessage(message) {
 
             // parameter for fetch() { limit: # of messages to fetch }
             let prevMessages = await message.channel.messages.fetch({
-                limit: 5,
+                limit: 10,
             });
             prevMessages.reverse();
 
@@ -198,14 +198,8 @@ export async function handleMessage(message) {
 
                 let userMessage = msg.content;
                 const regex = /<@1113624071721193524>\s*/;
-
                 const found = userMessage.search(regex) >= 0;
-                if (found)
-                    userMessage = userMessage.replace(
-                        /<@1113624071721193524>\s*/,
-                        ""
-                    );
-                else return;
+                if (found) return;
 
                 if (msg.attachments.size > 0) {
                     msg.attachments.forEach((attachment) => {
@@ -226,7 +220,6 @@ export async function handleMessage(message) {
                     });
                     return;
                 }
-
                 conversationLog.push({
                     role: "user",
                     content: userMessage,
