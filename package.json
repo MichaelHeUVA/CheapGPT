@@ -14,9 +14,11 @@
         "discord.js": "^14.14.1",
         "dotenv": "^16.4.5",
         "json-stringify-safe": "^5.0.1",
+        "katex": "^0.16.10",
         "mysql2": "^3.9.2",
         "nodemon": "^3.1.0",
         "openai": "^4.29.2",
+        "puppeteer": "^22.6.1",
         "sqlite3": "^5.1.7"
     }
 }

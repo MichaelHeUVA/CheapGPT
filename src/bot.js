@@ -1,5 +1,5 @@
 import { Client, IntentsBitField } from "discord.js";
-import { handleMessage } from "./handlers/messageHandler.js";
+import { handleMessage } from "./discord/messageHandler.js";
 import dotenv from "dotenv";
 dotenv.config();
 

@@ -15,24 +15,24 @@ export async function getOpenAIReponse(
     // model: "gpt-4-turbo-preview"
     // model: "gpt-4-vision-preview"
     let completion;
-    if (number_of_images > 0) {
-        const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
-        });
-        completion = await openai.chat.completions.create({
-            model: "gpt-4-vision-preview",
-            messages: conversationLog,
-        });
-    } else {
-        const openai = new OpenAI({
-            baseURL: "https://router.neutrinoapp.com/api/engines",
-            apiKey: process.env.NEUTRINO_API_KEY,
-        });
-        completion = await openai.chat.completions.create({
-            model: "chat",
-            messages: conversationLog,
-        });
-    }
+    // if (number_of_images > 0) {
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+    completion = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: conversationLog,
+    });
+    // } else {
+    //     const openai = new OpenAI({
+    //         baseURL: "https://router.neutrinoapp.com/api/engines",
+    //         apiKey: process.env.NEUTRINO_API_KEY,
+    //     });
+    //     completion = await openai.chat.completions.create({
+    //         model: "chat",
+    //         messages: conversationLog,
+    //     });
+    // }
 
     createTables();
     if ((await getUser(message.author.id)) === undefined) {
